@@ -105,8 +105,8 @@ def main(args, debug=False):
             img_to_draw, (int(p[0]), int(p[1])), size, (0, 0, 255), -1)
     # save the visualized image
 
-    cv2.imwrite(os.path.join(args.output_dir,
-                'pred{}.jpg'.format(predict_cnt)), img_to_draw)
+    cv2.imwrite(os.path.join(args.output_dir, os.path.basename(img_path)[:-4] +
+                '_pred{}.jpg'.format(predict_cnt)), img_to_draw)
 
     cv2.imshow("p2p", img_to_draw)
     cv2.waitKey(0)
