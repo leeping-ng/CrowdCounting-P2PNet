@@ -22,9 +22,9 @@ from torch.autograd import Variable
 
 # needed due to empty tensor bug in pytorch and torchvision 0.5
 import torchvision
-if float(torchvision.__version__[:3]) < 0.7:
-    from torchvision.ops import _new_empty_tensor
-    from torchvision.ops.misc import _output_size
+# if float(torchvision.__version__[:3]) < 0.7:
+#     from torchvision.ops import _new_empty_tensor
+#     from torchvision.ops.misc import _output_size
 
 
 class SmoothedValue(object):
@@ -51,7 +51,8 @@ class SmoothedValue(object):
         """
         if not is_dist_avail_and_initialized():
             return
-        t = torch.tensor([self.count, self.total], dtype=torch.float64, device='cuda')
+        t = torch.tensor([self.count, self.total],
+                         dtype=torch.float64, device='cuda')
         dist.barrier()
         dist.all_reduce(t)
         t = t.tolist()
@@ -118,9 +119,11 @@ def all_gather(data):
     # gathering tensors of different shapes
     tensor_list = []
     for _ in size_list:
-        tensor_list.append(torch.empty((max_size,), dtype=torch.uint8, device="cuda"))
+        tensor_list.append(torch.empty(
+            (max_size,), dtype=torch.uint8, device="cuda"))
     if local_size != max_size:
-        padding = torch.empty(size=(max_size - local_size,), dtype=torch.uint8, device="cuda")
+        padding = torch.empty(size=(max_size - local_size,),
+                              dtype=torch.uint8, device="cuda")
         tensor = torch.cat((tensor, padding), dim=0)
     dist.all_gather(tensor_list, tensor)
 
@@ -274,6 +277,7 @@ def collate_fn(batch):
     batch[0] = nested_tensor_from_tensor_list(batch[0])
     return tuple(batch)
 
+
 def collate_fn_crowd(batch):
     # re-organize the batch
     batch_new = []
@@ -296,6 +300,7 @@ def _max_by_axis(the_list):
         for index, item in enumerate(sublist):
             maxes[index] = max(maxes[index], item)
     return maxes
+
 
 def _max_by_axis_pad(the_list):
     # type: (List[List[int]]) -> List[int]
@@ -328,6 +333,7 @@ def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
     else:
         raise ValueError('not supported')
     return tensor
+
 
 class NestedTensor(object):
     def __init__(self, tensors, mask: Optional[Tensor]):
@@ -479,6 +485,7 @@ class FocalLoss(nn.Module):
 
 
     """
+
     def __init__(self, class_num, alpha=None, gamma=2, size_average=True):
         super(FocalLoss, self).__init__()
         if alpha is None:
@@ -506,7 +513,7 @@ class FocalLoss(nn.Module):
             self.alpha = self.alpha.cuda()
         alpha = self.alpha[ids.data.view(-1)]
 
-        probs = (P*class_mask).sum(1).view(-1,1)
+        probs = (P*class_mask).sum(1).view(-1, 1)
 
         log_p = probs.log()
         batch_loss = -alpha*(torch.pow((1-probs), self.gamma))*log_p

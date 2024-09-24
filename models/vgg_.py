@@ -25,7 +25,8 @@ model_urls = {
 
 
 model_paths = {
-    'vgg16_bn': '/apdcephfs/private_changanwang/checkpoints/vgg16_bn-6c64b313.pth',
+    # Download from https://download.pytorch.org/models/vgg16_bn-6c64b313.pth
+    'vgg16_bn': 'weights/vgg16_bn-6c64b313.pth',
     'vgg16': '/apdcephfs/private_changanwang/checkpoints/vgg16-397923af.pth',
 
 }
@@ -59,7 +60,8 @@ class VGG(nn.Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
@@ -81,9 +83,11 @@ def make_layers(cfg, batch_norm=False, sync=False):
             if batch_norm:
                 if sync:
                     print('use sync backbone')
-                    layers += [conv2d, nn.SyncBatchNorm(v), nn.ReLU(inplace=True)]
+                    layers += [conv2d,
+                               nn.SyncBatchNorm(v), nn.ReLU(inplace=True)]
                 else:
-                    layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+                    layers += [conv2d,
+                               nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
                 layers += [conv2d, nn.ReLU(inplace=True)]
             in_channels = v
@@ -101,7 +105,8 @@ cfgs = {
 def _vgg(arch, cfg, batch_norm, pretrained, progress, sync=False, **kwargs):
     if pretrained:
         kwargs['init_weights'] = False
-    model = VGG(make_layers(cfgs[cfg], batch_norm=batch_norm, sync=sync), **kwargs)
+    model = VGG(make_layers(
+        cfgs[cfg], batch_norm=batch_norm, sync=sync), **kwargs)
     if pretrained:
         state_dict = torch.load(model_paths[arch])
         model.load_state_dict(state_dict)
