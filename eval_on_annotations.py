@@ -32,6 +32,7 @@ warnings.filterwarnings('ignore')
 
 
 DIR = "/home/leeping/Clients/PMY/crowd_counting_test_dataset/"
+WEIGHTS_PATH = "weights/SHTechA.pth"
 
 
 def get_args_parser():
@@ -52,7 +53,7 @@ def get_args_parser():
                         help='path of directory with images and annotations')
     parser.add_argument('--output_dir', default='',
                         help='path where to save')
-    parser.add_argument('--weight_path', default='',
+    parser.add_argument('--weight_path', default=WEIGHTS_PATH,
                         help='path where the trained weights saved')
 
     parser.add_argument('--gpu_id', default=0, type=int,

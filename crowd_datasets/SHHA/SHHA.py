@@ -8,11 +8,12 @@ import cv2
 import glob
 import scipy.io as io
 
+
 class SHHA(Dataset):
     def __init__(self, data_root, transform=None, train=False, patch=False, flip=False):
         self.root_path = data_root
-        self.train_lists = "shanghai_tech_part_a_train.list"
-        self.eval_list = "shanghai_tech_part_a_test.list"
+        self.train_lists = "train.list"
+        self.eval_list = "test.list"
         # there may exist multiple list files
         self.img_list_file = self.train_lists.split(',')
         if train:
@@ -27,15 +28,15 @@ class SHHA(Dataset):
             train_list = train_list.strip()
             with open(os.path.join(self.root_path, train_list)) as fin:
                 for line in fin:
-                    if len(line) < 2: 
+                    if len(line) < 2:
                         continue
                     line = line.strip().split()
                     self.img_map[os.path.join(self.root_path, line[0].strip())] = \
-                                    os.path.join(self.root_path, line[1].strip())
+                        os.path.join(self.root_path, line[1].strip())
         self.img_list = sorted(list(self.img_map.keys()))
         # number of samples
         self.nSamples = len(self.img_list)
-        
+
         self.transform = transform
         self.train = train
         self.patch = patch
@@ -62,7 +63,8 @@ class SHHA(Dataset):
             scale = random.uniform(*scale_range)
             # scale the image and points
             if scale * min_size > 128:
-                img = torch.nn.functional.upsample_bilinear(img.unsqueeze(0), scale_factor=scale).squeeze(0)
+                img = torch.nn.functional.upsample_bilinear(
+                    img.unsqueeze(0), scale_factor=scale).squeeze(0)
                 point *= scale
         # random crop augumentaiton
         if self.train and self.patch:
@@ -84,7 +86,8 @@ class SHHA(Dataset):
         target = [{} for i in range(len(point))]
         for i, _ in enumerate(point):
             target[i]['point'] = torch.Tensor(point[i])
-            image_id = int(img_path.split('/')[-1].split('.')[0].split('_')[-1])
+            image_id = int(img_path.split(
+                '/')[-1].split('.')[0].split('_')[-1])
             image_id = torch.Tensor([image_id]).long()
             target[i]['image_id'] = image_id
             target[i]['labels'] = torch.ones([point[i].shape[0]]).long()
@@ -108,6 +111,8 @@ def load_data(img_gt_path, train):
     return img, np.array(points)
 
 # random crop augumentation
+
+
 def random_crop(img, den, num_patch=4):
     half_h = 128
     half_w = 128
@@ -122,7 +127,8 @@ def random_crop(img, den, num_patch=4):
         # copy the cropped rect
         result_img[i] = img[:, start_h:end_h, start_w:end_w]
         # copy the cropped points
-        idx = (den[:, 0] >= start_w) & (den[:, 0] <= end_w) & (den[:, 1] >= start_h) & (den[:, 1] <= end_h)
+        idx = (den[:, 0] >= start_w) & (den[:, 0] <= end_w) & (
+            den[:, 1] >= start_h) & (den[:, 1] <= end_h)
         # shift the corrdinates
         record_den = den[idx]
         record_den[:, 0] -= start_w

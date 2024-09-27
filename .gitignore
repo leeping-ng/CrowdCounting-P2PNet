@@ -1,3 +1,7 @@
 __pycache__
 weights/
 results/
+ckpt/
+data/
+log/
+runs/
