@@ -10,32 +10,15 @@ import scipy.io as io
 
 
 class SHHA(Dataset):
-    def __init__(self, data_root, transform=None, train=False, patch=False, flip=False):
-        self.root_path = data_root
-        self.train_lists = "train.list"
-        self.eval_list = "test.list"
-        # there may exist multiple list files
-        self.img_list_file = self.train_lists.split(',')
-        if train:
-            self.img_list_file = self.train_lists.split(',')
-        else:
-            self.img_list_file = self.eval_list.split(',')
+    def __init__(self, images_dir, img_filenames, img_gt_map, transform=None, train=False, patch=False, flip=False):
 
-        self.img_map = {}
-        self.img_list = []
-        # loads the image/gt pairs
-        for _, train_list in enumerate(self.img_list_file):
-            train_list = train_list.strip()
-            with open(os.path.join(self.root_path, train_list)) as fin:
-                for line in fin:
-                    if len(line) < 2:
-                        continue
-                    line = line.strip().split()
-                    self.img_map[os.path.join(self.root_path, line[0].strip())] = \
-                        os.path.join(self.root_path, line[1].strip())
-        self.img_list = sorted(list(self.img_map.keys()))
+        self.images_dir = images_dir
+        self.img_list = img_filenames
+        self.img_gt_map = img_gt_map
+
         # number of samples
         self.nSamples = len(self.img_list)
+        # self.img_map = {'data/test/IMG_121.jpg': 'data/test/IMG_121.txt', 'data/test/IMG_245.jpg': 'data/test/IMG_245.txt'}
 
         self.transform = transform
         self.train = train
@@ -48,10 +31,8 @@ class SHHA(Dataset):
     def __getitem__(self, index):
         assert index <= len(self), 'index range error'
 
-        img_path = self.img_list[index]
-        gt_path = self.img_map[img_path]
-        # load image and ground truth
-        img, point = load_data((img_path, gt_path), self.train)
+        img_basename = self.img_list[index]
+        img, point = self.load_data(img_basename)
         # applu augumentation
         if self.transform is not None:
             img = self.transform(img)
@@ -86,31 +67,22 @@ class SHHA(Dataset):
         target = [{} for i in range(len(point))]
         for i, _ in enumerate(point):
             target[i]['point'] = torch.Tensor(point[i])
-            image_id = int(img_path.split(
-                '/')[-1].split('.')[0].split('_')[-1])
+            image_id = index
+            # image_id = int(img_path.split(
+            #     '/')[-1].split('.')[0].split('_')[-1])
             image_id = torch.Tensor([image_id]).long()
             target[i]['image_id'] = image_id
             target[i]['labels'] = torch.ones([point[i].shape[0]]).long()
 
         return img, target
 
+    def load_data(self, img_basename):
+        # load the images
+        img = cv2.imread(os.path.join(self.images_dir, img_basename))
+        img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        # load ground truth points
 
-def load_data(img_gt_path, train):
-    img_path, gt_path = img_gt_path
-    # load the images
-    img = cv2.imread(img_path)
-    img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    # load ground truth points
-    points = []
-    with open(gt_path) as f_label:
-        for line in f_label:
-            x = float(line.strip().split(' ')[0])
-            y = float(line.strip().split(' ')[1])
-            points.append([x, y])
-
-    return img, np.array(points)
-
-# random crop augumentation
+        return img, self.img_gt_map[img_basename]
 
 
 def random_crop(img, den, num_patch=4):

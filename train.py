@@ -15,8 +15,10 @@ from tensorboardX import SummaryWriter
 import warnings
 warnings.filterwarnings('ignore')
 
+
 def get_args_parser():
-    parser = argparse.ArgumentParser('Set parameters for training P2PNet', add_help=False)
+    parser = argparse.ArgumentParser(
+        'Set parameters for training P2PNet', add_help=False)
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--lr_backbone', default=1e-5, type=float)
     parser.add_argument('--batch_size', default=8, type=int)
@@ -53,9 +55,11 @@ def get_args_parser():
 
     # dataset parameters
     parser.add_argument('--dataset_file', default='SHHA')
-    parser.add_argument('--data_root', default='./new_public_density_data',
-                        help='path where the dataset is')
-    
+    parser.add_argument('--images_dir', default='data/usta_2023/images',
+                        help='directory with images')
+    parser.add_argument('--annotations_path', default='data/usta_2023/annotations.xml',
+                        help='path to CVAT annotation file')
+
     parser.add_argument('--output_dir', default='./log',
                         help='path where to save, empty for no saving')
     parser.add_argument('--checkpoints_dir', default='./ckpt',
@@ -71,9 +75,11 @@ def get_args_parser():
     parser.add_argument('--num_workers', default=8, type=int)
     parser.add_argument('--eval_freq', default=5, type=int,
                         help='frequency of evaluation, default setting is evaluating in every 5 epoch')
-    parser.add_argument('--gpu_id', default=0, type=int, help='the gpu used for training')
+    parser.add_argument('--gpu_id', default=0, type=int,
+                        help='the gpu used for training')
 
     return parser
+
 
 def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = '{}'.format(args.gpu_id)
@@ -102,11 +108,13 @@ def main(args):
 
     model_without_ddp = model
 
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    n_parameters = sum(p.numel()
+                       for p in model.parameters() if p.requires_grad)
     print('number of params:', n_parameters)
     # use different optimation params for different parts of the model
     param_dicts = [
-        {"params": [p for n, p in model_without_ddp.named_parameters() if "backbone" not in n and p.requires_grad]},
+        {"params": [p for n, p in model_without_ddp.named_parameters(
+        ) if "backbone" not in n and p.requires_grad]},
         {
             "params": [p for n, p in model_without_ddp.named_parameters() if "backbone" in n and p.requires_grad],
             "lr": args.lr_backbone,
@@ -118,7 +126,7 @@ def main(args):
     # create the dataset
     loading_data = build_dataset(args=args)
     # create the training and valiation set
-    train_set, val_set = loading_data(args.data_root)
+    train_set, val_set = loading_data(args.images_dir, args.annotations_path)
     # create the sampler used during training
     sampler_train = torch.utils.data.RandomSampler(train_set)
     sampler_val = torch.utils.data.SequentialSampler(val_set)
@@ -130,7 +138,7 @@ def main(args):
                                    collate_fn=utils.collate_fn_crowd, num_workers=args.num_workers)
 
     data_loader_val = DataLoader(val_set, 1, sampler=sampler_val,
-                                    drop_last=False, collate_fn=utils.collate_fn_crowd, num_workers=args.num_workers)
+                                 drop_last=False, collate_fn=utils.collate_fn_crowd, num_workers=args.num_workers)
 
     if args.frozen_weights is not None:
         checkpoint = torch.load(args.frozen_weights, map_location='cpu')
@@ -151,7 +159,7 @@ def main(args):
     mse = []
     # the logger writer
     writer = SummaryWriter(args.tensorboard_dir)
-    
+
     step = 0
     # training starts here
     for epoch in range(args.start_epoch, args.epochs):
@@ -164,20 +172,23 @@ def main(args):
         if writer is not None:
             with open(run_log_name, "a") as log_file:
                 log_file.write("loss/loss@{}: {}".format(epoch, stat['loss']))
-                log_file.write("loss/loss_ce@{}: {}".format(epoch, stat['loss_ce']))
-                
+                log_file.write(
+                    "loss/loss_ce@{}: {}".format(epoch, stat['loss_ce']))
+
             writer.add_scalar('loss/loss', stat['loss'], epoch)
             writer.add_scalar('loss/loss_ce', stat['loss_ce'], epoch)
 
         t2 = time.time()
-        print('[ep %d][lr %.7f][%.2fs]' % \
+        print('[ep %d][lr %.7f][%.2fs]' %
               (epoch, optimizer.param_groups[0]['lr'], t2 - t1))
         with open(run_log_name, "a") as log_file:
-            log_file.write('[ep %d][lr %.7f][%.2fs]' % (epoch, optimizer.param_groups[0]['lr'], t2 - t1))
+            log_file.write('[ep %d][lr %.7f][%.2fs]' %
+                           (epoch, optimizer.param_groups[0]['lr'], t2 - t1))
         # change lr according to the scheduler
         lr_scheduler.step()
         # save latest weights every epoch
-        checkpoint_latest_path = os.path.join(args.checkpoints_dir, 'latest.pth')
+        checkpoint_latest_path = os.path.join(
+            args.checkpoints_dir, 'latest.pth')
         torch.save({
             'model': model_without_ddp.state_dict(),
         }, checkpoint_latest_path)
@@ -190,12 +201,15 @@ def main(args):
             mae.append(result[0])
             mse.append(result[1])
             # print the evaluation results
-            print('=======================================test=======================================')
-            print("mae:", result[0], "mse:", result[1], "time:", t2 - t1, "best mae:", np.min(mae), )
+            print(
+                '=======================================test=======================================')
+            print("mae:", result[0], "mse:", result[1],
+                  "time:", t2 - t1, "best mae:", np.min(mae), )
             with open(run_log_name, "a") as log_file:
-                log_file.write("mae:{}, mse:{}, time:{}, best mae:{}".format(result[0], 
-                                result[1], t2 - t1, np.min(mae)))
-            print('=======================================test=======================================')
+                log_file.write("mae:{}, mse:{}, time:{}, best mae:{}".format(result[0],
+                                                                             result[1], t2 - t1, np.min(mae)))
+            print(
+                '=======================================test=======================================')
             # recored the evaluation results
             if writer is not None:
                 with open(run_log_name, "a") as log_file:
@@ -207,7 +221,8 @@ def main(args):
 
             # save the best model since begining
             if abs(np.min(mae) - result[0]) < 0.01:
-                checkpoint_best_path = os.path.join(args.checkpoints_dir, 'best_mae.pth')
+                checkpoint_best_path = os.path.join(
+                    args.checkpoints_dir, 'best_mae.pth')
                 torch.save({
                     'model': model_without_ddp.state_dict(),
                 }, checkpoint_best_path)
@@ -216,7 +231,9 @@ def main(args):
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('P2PNet training and evaluation script', parents=[get_args_parser()])
+    parser = argparse.ArgumentParser(
+        'P2PNet training and evaluation script', parents=[get_args_parser()])
     args = parser.parse_args()
     main(args)

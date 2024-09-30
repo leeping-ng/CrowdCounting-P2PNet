@@ -3,8 +3,9 @@ import scipy.io
 import numpy as np
 from tqdm import tqdm
 
-DIR = "/home/leeping/Downloads/ShanghaiTech_Crowd_Counting_Dataset/part_B_final/train_data/"
-LIST_FILEPATH = "/home/leeping/Repos/crowd-counting-comparison/CrowdCounting-P2PNet/data/train.list"
+MODE = "test"  # "train"
+DIR = "/home/leeping/Downloads/ShanghaiTech_Crowd_Counting_Dataset/part_B_final/" + MODE + "_data/"
+LIST_FILEPATH = "/home/leeping/Repos/crowd-counting-comparison/CrowdCounting-P2PNet/data/" + MODE + ".list"
 list_to_write = []
 
 
@@ -21,7 +22,8 @@ for annotation_filename in tqdm(annotations_list):
     txt_filepath = os.path.join(
         DIR, "images", txt_filename)
     np.savetxt(txt_filepath, arr)
-    list_to_write.append("train/" + img_filename + " train/" + txt_filename)
+    list_to_write.append(MODE + "/" + img_filename +
+                         " " + MODE + "/" + txt_filename)
 
 
 with open(LIST_FILEPATH, "w") as f:

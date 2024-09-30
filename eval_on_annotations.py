@@ -32,7 +32,7 @@ warnings.filterwarnings('ignore')
 
 
 DIR = "/home/leeping/Clients/PMY/crowd_counting_test_dataset/"
-WEIGHTS_PATH = "weights/SHTechA.pth"
+WEIGHTS_PATH = "weights/SHTechB_MAE_9.99.pth"
 
 
 def get_args_parser():
